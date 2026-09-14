@@ -1,0 +1,3 @@
+# Optional CPU OCR runtime. Requires a supported Python/OS/architecture.
+paddlepaddle==3.2.0
+paddleocr==3.2.0

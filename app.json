@@ -1,0 +1,7 @@
+{
+  "name": "DoodleToday",
+  "kind": "card",
+  "api_port": 8101,
+  "render_port": 3101,
+  "web_port": 5101
+}

@@ -1,0 +1,18 @@
+services:
+  doodletoday:
+    build:
+      context: .
+      args:
+        INSTALL_OCR: "false"
+    env_file: .env
+    environment:
+      API_HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:8101:8101"
+    volumes:
+      - doodletoday-data:/app/data
+      - ocr-model-cache:/home/node/.paddlex
+    restart: unless-stopped
+volumes:
+  doodletoday-data:
+  ocr-model-cache:

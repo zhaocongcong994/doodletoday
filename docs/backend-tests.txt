@@ -1,0 +1,28 @@
+.........sssss...............................s                           [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.10/site-packages/starlette/testclient.py:51
+  /Users/apple/AI/今日人格卡/.venv/lib/python3.10/site-packages/starlette/testclient.py:51: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+40 passed, 6 skipped, 1 warning in 7.88s
+
+> daily-persona-studio@0.1.0 test:render
+> node --test renderer/render.test.mjs
+
+✔ Chinese PNG / magazine (212.001916ms)
+✔ Maximum Chinese text fits / magazine (170.896875ms)
+✔ Chinese PNG / labels (121.023833ms)
+✔ Maximum Chinese text fits / labels (161.426833ms)
+✔ Chinese PNG / minimal (141.471458ms)
+✔ Maximum Chinese text fits / minimal (141.314708ms)
+✔ Reject remote image URLs (0.336ms)
+✔ Album long caption, two assets and maximum place lengths (437.465167ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1459.055708

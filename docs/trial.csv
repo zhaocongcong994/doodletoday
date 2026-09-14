@@ -1,0 +1,1 @@
+participant,scenario,task_id,completed,elapsed_ms,prompt_tokens,completion_tokens,tool_failures,revisions,exported,would_return,notes

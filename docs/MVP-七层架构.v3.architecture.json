@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "今日人格卡 MVP：Agent 产品七层架构",
+    "quality_profile": "showcase",
+    "viewBox": [1180, 680]
+  },
+  "components": [
+    {"id": "interaction", "type": "frontend", "label": "① 交互层", "sublabel": "React H5 · 输入/预览/改稿/下载", "pos": [390, 20], "size": [400, 54]},
+    {"id": "product", "type": "backend", "label": "② 产品层", "sublabel": "FastAPI · 会话/作品/版本/配额", "pos": [390, 115], "size": [400, 54]},
+    {"id": "orchestration", "type": "backend", "label": "③ Agent 编排层", "sublabel": "循环/工具分发/权限/hooks/持久任务", "pos": [390, 210], "size": [400, 54]},
+    {"id": "model", "type": "external", "label": "④ 模型层", "sublabel": "兼容 Chat Completions 的工具调用模型", "pos": [390, 305], "size": [400, 54]},
+    {"id": "capability", "type": "backend", "label": "⑤ 能力集成层", "sublabel": "get_style_context / render_card / PNG 渲染", "pos": [390, 400], "size": [400, 54]},
+    {"id": "data", "type": "database", "label": "⑥ 数据层", "sublabel": "SQLite · 私有作品 · 不可变版本 · 轨迹", "pos": [390, 495], "size": [400, 54]},
+    {"id": "infrastructure", "type": "cloud", "label": "⑦ 基础设施层", "sublabel": "单机单 worker · Node 渲染器 · 外置配置", "pos": [390, 590], "size": [400, 54]},
+    {"id": "security", "type": "security", "label": "横切：安全边界", "sublabel": "身份绑定 · 白名单 · 输入校验 · 同源写入", "pos": [62, 235], "size": [250, 72]},
+    {"id": "observability", "type": "messagebus", "label": "横切：可观测性", "sublabel": "任务状态 · 耗时 · token · 工具结果", "pos": [868, 235], "size": [250, 72]}
+  ],
+  "connections": [
+    {"id": "interaction-product", "from": "interaction", "to": "product", "label": "同源 API", "variant": "emphasis", "labelAt": [590, 94]},
+    {"id": "product-orchestration", "from": "product", "to": "orchestration", "label": "创建持久任务", "labelAt": [590, 189]},
+    {"id": "orchestration-model", "from": "orchestration", "to": "model", "label": "messages + tools", "labelAt": [590, 284]},
+    {"id": "model-capability", "from": "model", "to": "capability", "label": "结构化 tool_calls", "labelAt": [590, 379]},
+    {"id": "capability-data", "from": "capability", "to": "data", "label": "原子写入版本", "labelAt": [590, 474]},
+    {"id": "data-infrastructure", "from": "data", "to": "infrastructure", "label": "持久化与恢复", "labelAt": [590, 569]},
+    {"id": "security-orchestration", "from": "security", "to": "orchestration", "label": "执行前拒绝越权", "variant": "security"},
+    {"id": "orchestration-observability", "from": "orchestration", "to": "observability", "label": "hooks 记录", "variant": "dashed"}
+  ]
+}

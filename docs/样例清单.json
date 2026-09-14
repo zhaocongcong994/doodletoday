@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "scenario": "矛盾状态",
+    "states": [
+      "困",
+      "想出门",
+      "不想社交"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 2,
+    "scenario": "安静的一天",
+    "states": [
+      "平静",
+      "想独处",
+      "满足"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 3,
+    "scenario": "高能量",
+    "states": [
+      "兴奋",
+      "想创作",
+      "有点饿"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 4,
+    "scenario": "疲惫但期待",
+    "states": [
+      "很困",
+      "很期待",
+      "不想加班"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 5,
+    "scenario": "开心与烦躁",
+    "states": [
+      "开心",
+      "有点烦",
+      "想散步"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 6,
+    "scenario": "社交摇摆",
+    "states": [
+      "想见朋友",
+      "不想讲话",
+      "纠结"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 7,
+    "scenario": "旅行前夜",
+    "states": [
+      "紧张",
+      "想出发",
+      "睡不着"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 8,
+    "scenario": "周末留白",
+    "states": [
+      "放空",
+      "想躺平",
+      "随便"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 9,
+    "scenario": "工作收尾",
+    "states": [
+      "专注",
+      "累",
+      "轻松"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 10,
+    "scenario": "雨天",
+    "states": [
+      "想听雨",
+      "懒洋洋",
+      "想喝茶"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 11,
+    "scenario": "运动之后",
+    "states": [
+      "酸痛",
+      "开心",
+      "想睡觉"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 12,
+    "scenario": "读书日",
+    "states": [
+      "好奇",
+      "安静",
+      "脑洞大开"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 13,
+    "scenario": "见面前",
+    "states": [
+      "期待",
+      "害羞",
+      "想打扮"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 14,
+    "scenario": "灵感过载",
+    "states": [
+      "灵感过载",
+      "精力充沛",
+      "不知先做什么"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 15,
+    "scenario": "轻微失落",
+    "states": [
+      "有点失落",
+      "想走走",
+      "不想解释"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 16,
+    "scenario": "日常小确幸",
+    "states": [
+      "满足",
+      "想吃甜的",
+      "慢一点"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 17,
+    "scenario": "重启一天",
+    "states": [
+      "想重新开始",
+      "谨慎",
+      "有盼头"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 18,
+    "scenario": "局部改稿",
+    "states": [
+      "困",
+      "自由",
+      "冷幽默"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 19,
+    "scenario": "换风格",
+    "states": [
+      "清醒",
+      "简洁",
+      "有条理"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  },
+  {
+    "id": 20,
+    "scenario": "长度边界",
+    "states": [
+      "中中中中中中中中中中中中中中中中中中中中",
+      "文文文文文文文文文文文文文文文文文文文文",
+      "字字字字字字字字字字字字字字字字字字字字"
+    ],
+    "memory": "人工构造的日常样例。",
+    "real_model_status": "pending"
+  }
+]
