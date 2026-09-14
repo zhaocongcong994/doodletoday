@@ -8,7 +8,9 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:24-bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv libgomp1 libglib2.0-0 libgl1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update \
+ && apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends python3 python3-venv libgomp1 libglib2.0-0 libgl1 \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY requirements.txt requirements-ocr.txt ./
 RUN python3 -m venv .venv && .venv/bin/pip install --no-cache-dir -r requirements.txt
