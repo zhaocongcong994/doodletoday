@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -245,6 +246,66 @@ def test_same_invite_shares_workspace_across_devices(client):
     assert phone.get('/api/works').json()[0]['id']==result['work_id']
     assert phone.get('/api/session').json()['user_id']==client.get('/api/session').json()['user_id']
     phone.close()
+
+def test_relogin_migrates_legacy_browser_account():
+    # 旧版本每次登录生成随机 user_id。模拟还握着旧 cookie 的浏览器：
+    # 重新提交邀请口令后，历史作品必须并入邀请码工作区。
+    legacy=db.uid();wid=db.uid()
+    db.run('INSERT INTO works VALUES(?,?,?,?,?)',(wid,legacy,'旧作品',db.dumps({'states':['困']}),time.time()))
+    raw='legacy-cookie-token'
+    db.run('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(raw.encode()).hexdigest(),legacy,time.time()+3600))
+    browser=TestClient(app,headers={'X-Requested-With':'studio'})
+    browser.cookies.set(config.COOKIE,raw)
+    phone=TestClient(app,headers={'X-Requested-With':'studio'})
+    assert phone.post('/api/session',json={'invite':'test-invitation'}).status_code==200
+    assert phone.get('/api/works').json()==[]
+    assert browser.post('/api/session',json={'invite':'test-invitation'}).status_code==200
+    assert [w['id'] for w in browser.get('/api/works').json()]==[wid]
+    assert [w['id'] for w in phone.get('/api/works').json()]==[wid]
+    assert browser.get('/api/session').json()['user_id']==config.user_id_for_invite('test-invitation')
+    phone.close()
+    browser.close()
+
+def test_invite_login_tolerates_surrounding_whitespace():
+    browser=TestClient(app,headers={'X-Requested-With':'studio'})
+    assert browser.post('/api/session',json={'invite':'  test-invitation  '}).status_code==200
+    assert browser.get('/api/session').json()['user_id']==config.user_id_for_invite('test-invitation')
+    browser.close()
+
+def test_invite_expires_two_days_after_first_activation(monkeypatch):
+    t0=1_000_000.0
+    monkeypatch.setattr(time,'time',lambda:t0)
+    first=TestClient(app,headers={'X-Requested-With':'studio'})
+    assert first.post('/api/session',json={'invite':'test-invitation'}).status_code==200
+    work=first.post('/api/cards',json={'states':['困','想出门','不想社交']}).json()
+    assert db.one('SELECT id FROM works WHERE id=?',(work['work_id'],))
+    assert first.get('/api/session').status_code==200
+    monkeypatch.setattr(time,'time',lambda:t0+2*86400+1)
+    assert first.get('/api/session').status_code==401
+    late=TestClient(app,headers={'X-Requested-With':'studio'})
+    denied=late.post('/api/session',json={'invite':'test-invitation'})
+    assert denied.status_code==403 and '有效期' in denied.json()['detail']
+    # 过期后再登录，作品、任务、会话与产物文件一并清除
+    assert db.rows('SELECT * FROM works')==[]
+    assert db.rows('SELECT * FROM tasks')==[]
+    assert not (config.DATA/work['work_id']).exists()
+    late.close();first.close()
+
+def test_permanent_invite_has_no_expiry(monkeypatch):
+    monkeypatch.setattr(config,'EXTRA_INVITES',('zcc-code',))
+    monkeypatch.setattr(time,'time',lambda:1_000_000.0)
+    owner=TestClient(app,headers={'X-Requested-With':'studio'})
+    assert owner.post('/api/session',json={'invite':'zcc-code'}).status_code==200
+    work=owner.post('/api/cards',json={'states':['困','想出门','不想社交']}).json()
+    raw=owner.cookies.get(config.COOKIE)
+    monkeypatch.setattr(time,'time',lambda:1_000_000.0+400*86400)
+    later=TestClient(app,headers={'X-Requested-With':'studio'})
+    later.cookies.set(config.COOKIE,raw)
+    assert later.get('/api/session').status_code==200
+    assert len(db.rows('SELECT * FROM works'))==1
+    again=TestClient(app,headers={'X-Requested-With':'studio'})
+    assert again.post('/api/session',json={'invite':'zcc-code'}).status_code==200
+    again.close();later.close();owner.close()
 
 def test_redaction_and_safe_traces(client):
     text=redact('身份证：110101199901011234\n订单号 AB123456789\n2026-09-12 展览\n姓名 张三\n手机号 13800138000')

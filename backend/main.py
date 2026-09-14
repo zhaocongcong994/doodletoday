@@ -104,17 +104,28 @@ def login(body:schemas.Login,request:Request,response:Response):
     codes=config.invites()
     if not codes: raise HTTPException(503,'邀请口令尚未配置，请运行初始化脚本')
     bucket.append(now)
-    accepted = next((code for code in codes if hmac.compare_digest(body.invite.encode(), code.encode())), None)
+    accepted = next((code for code in codes if hmac.compare_digest(body.invite.strip().encode(), code.encode())), None)
     if accepted is None: raise HTTPException(401,'邀请口令不正确')
     workspace_user_id = config.user_id_for_invite(accepted)
+    permanent = accepted in config.PERMANENT_INVITES
+    activation = db.one('SELECT activated FROM invite_activations WHERE user_id=?',(workspace_user_id,))
+    if activation and not permanent and now-activation['activated']>config.INVITE_TTL:
+        db.purge_user(workspace_user_id)
+        raise HTTPException(403,'邀请口令已过有效期，作品已清除，请向作者索取新的口令')
+    if not activation:
+        db.run('INSERT OR IGNORE INTO invite_activations VALUES(?,?,?)',(workspace_user_id,accepted,now))
+        activation={'activated':now}
+    expires = config.PERMANENT_EXPIRY if permanent else activation['activated']+config.INVITE_TTL
     try:
         existing=user(request)
         if existing != workspace_user_id:
             db.merge_user(existing, workspace_user_id)
+        raw=request.cookies.get(config.COOKIE,'')
+        db.run('UPDATE sessions SET expires=? WHERE token=?',(expires,hashlib.sha256(raw.encode()).hexdigest()))
         return {'user_id':workspace_user_id}
     except HTTPException: pass
     raw=secrets.token_urlsafe(32)
-    db.run('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(raw.encode()).hexdigest(),workspace_user_id,now+30*86400))
+    db.run('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(raw.encode()).hexdigest(),workspace_user_id,expires))
     response.set_cookie(config.COOKIE,raw,httponly=True,secure=config.SECURE_COOKIE,samesite='strict',max_age=30*86400)
     return {'user_id':workspace_user_id}
 
