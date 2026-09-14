@@ -15,9 +15,10 @@ RUN sed -i "s|deb.debian.org|${APT_MIRROR_HOST}|g" /etc/apt/sources.list.d/debia
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY requirements.txt requirements-ocr.txt ./
-RUN python3 -m venv .venv && .venv/bin/pip install --no-cache-dir -r requirements.txt
+ARG PIP_INDEX_URL=https://pypi.org/simple
+RUN python3 -m venv .venv && .venv/bin/pip install --no-cache-dir --index-url "$PIP_INDEX_URL" -r requirements.txt
 ARG INSTALL_OCR=false
-RUN if [ "$INSTALL_OCR" = "true" ]; then .venv/bin/pip install --no-cache-dir -r requirements-ocr.txt; fi
+RUN if [ "$INSTALL_OCR" = "true" ]; then .venv/bin/pip install --no-cache-dir --index-url "$PIP_INDEX_URL" -r requirements-ocr.txt; fi
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/frontend/dist ./frontend/dist
 COPY backend ./backend
