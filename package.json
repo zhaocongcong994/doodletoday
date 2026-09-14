@@ -1,6 +1,6 @@
 {
   "name":"daily-persona-studio", "version":"0.1.0", "private":true, "type":"module",
-  "scripts":{"dev":"python3 scripts/start.py --dev","start":"python3 scripts/start.py","build":"tsc -p frontend/tsconfig.json && vite build --config frontend/vite.config.ts","render":"node renderer/server.mjs","samples":"node scripts/generate_style_samples.mjs","test:render":"node --test renderer/render.test.mjs"},
+  "scripts":{"dev":"python3 scripts/start.py --dev","start":"python3 scripts/start.py","build":"tsc -p frontend/tsconfig.json && vite build --config frontend/vite.config.ts","render":"node renderer/server.mjs","samples":"node scripts/generate_style_samples.mjs","test:render":"node --test renderer/render.test.mjs","check:public":"python3 scripts/check_public_release.py"},
   "dependencies":{"@resvg/resvg-js":"2.6.2","dotenv":"16.6.1","react":"19.1.1","react-dom":"19.1.1","satori":"0.18.3"},
   "devDependencies":{"@types/react":"19.1.10","@types/react-dom":"19.1.9","@types/node":"24.3.0","@vitejs/plugin-react":"5.0.1","typescript":"5.9.2","vite":"7.1.3","@playwright/test":"1.55.0"}
 }

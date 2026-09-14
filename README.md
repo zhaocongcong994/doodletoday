@@ -88,3 +88,20 @@ Compose 只发布应用的 8101 端口，内部渲染服务不外露。生产域
 - [Agent Blueprint](../agent-blueprint/BLUEPRINT.md)
 - [Satori](https://github.com/vercel/satori)、[resvg-js](https://github.com/thx/resvg-js)、[PaddleOCR](https://www.paddleocr.ai/main/en/quick_start.html)
 - Noto Sans SC，SIL OFL，许可证 `renderer/fonts/OFL.txt`。静态 TTF 随项目提供，渲染无需访问字体 CDN。
+## Public repository safety
+
+Before every public push, run `npm run check:public`. It scans the tracked tree
+and staged files for private environment files, local data/build directories,
+private-key material, recognizable access tokens, and non-placeholder secret
+assignments. It does not replace revoking a secret that has already leaked.
+
+This checkout also uses the versioned `.githooks/pre-push` hook. Enable it once
+after cloning with:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+The same check runs in GitHub Actions for pushes and pull requests. Real model
+keys, server addresses, invitation credentials, and user data belong only in
+the deployment environment, never in tracked files.
