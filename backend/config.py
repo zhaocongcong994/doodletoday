@@ -22,6 +22,9 @@ MODEL_TIMEOUT = float(os.getenv('MODEL_TIMEOUT', '45'))
 MAX_ROUNDS = int(os.getenv('MAX_ROUNDS', '8'))
 RETRIES = int(os.getenv('MAX_RETRIES', '2'))
 DAILY_LIMIT = int(os.getenv('DAILY_LIMIT', '20'))
+INVITE_TTL = int(os.getenv('INVITE_TTL_DAYS', '2')) * 86400
+PERMANENT_INVITES = frozenset(code.strip() for code in os.getenv('PERMANENT_INVITES', 'zcc-code').split(',') if code.strip())
+PERMANENT_EXPIRY = 99999999999.0  # zcc-code 等长期口令不设过期（约 5138 年）
 RENDER_URL = os.getenv('RENDER_URL', f"http://127.0.0.1:{APP['render_port']}")
 RENDER_TOKEN = os.getenv('RENDER_TOKEN', '')
 OCR_ENABLED = os.getenv('OCR_ENABLED', 'false').lower() == 'true'
@@ -32,7 +35,7 @@ def model_ready():
 
 def invites():
     """Return configured invite codes without changing the legacy .env key."""
-    return tuple(code for code in (INVITE, *EXTRA_INVITES) if code)
+    return tuple(code.strip() for code in (INVITE, *EXTRA_INVITES) if code.strip())
 
 def user_id_for_invite(invite: str) -> str:
     """Return the stable workspace identity represented by an invite code.

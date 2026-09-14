@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import sqlite3
 import json
+import shutil
 import time
 import uuid
 from .config import DATA
@@ -14,6 +15,7 @@ CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, work_id TEXT NOT NULL RE
 CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, work_id TEXT NOT NULL REFERENCES works(id) ON DELETE CASCADE, user_id TEXT NOT NULL, kind TEXT NOT NULL, status TEXT NOT NULL, payload TEXT NOT NULL, result TEXT, error TEXT, attempts INTEGER NOT NULL DEFAULT 0, created REAL NOT NULL, updated REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS preferences (user_id TEXT PRIMARY KEY, style TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS quota (user_id TEXT NOT NULL, day TEXT NOT NULL, used INTEGER NOT NULL, PRIMARY KEY(user_id,day));
+CREATE TABLE IF NOT EXISTS invite_activations (user_id TEXT PRIMARY KEY, invite TEXT NOT NULL, activated REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS traces (id INTEGER PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE, event TEXT NOT NULL, detail TEXT NOT NULL, created REAL NOT NULL);
 CREATE INDEX IF NOT EXISTS works_owner ON works(user_id);
 CREATE INDEX IF NOT EXISTS tasks_status ON tasks(status,created);
@@ -89,6 +91,23 @@ def merge_user(old_user_id: str, new_user_id: str):
                 (new_user_id, row['day'], row['used']),
             )
         c.execute('DELETE FROM quota WHERE user_id=?', (old_user_id,))
+
+def purge_user(user_id: str):
+    """Delete everything an expired invite workspace owns, including files on disk.
+
+    Works cascade to versions/assets/tasks/traces through foreign keys. The
+    invite_activations row is kept so an expired code cannot restart its
+    two-day window by deleting and re-entering.
+    """
+    ids = [r['id'] for r in rows('SELECT id FROM works WHERE user_id=?', (user_id,))]
+    with connect() as c:
+        c.execute('BEGIN IMMEDIATE')
+        c.execute('DELETE FROM works WHERE user_id=?', (user_id,))
+        c.execute('DELETE FROM sessions WHERE user_id=?', (user_id,))
+        c.execute('DELETE FROM preferences WHERE user_id=?', (user_id,))
+        c.execute('DELETE FROM quota WHERE user_id=?', (user_id,))
+    for wid in ids:
+        shutil.rmtree(DATA / wid, ignore_errors=True)
 
 def trace(task_id, event, **detail):
     # Allowlisted numeric telemetry only. Never persist prompts, OCR, args or provider bodies.
