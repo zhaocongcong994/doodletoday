@@ -1,0 +1,15 @@
+[Unit]
+Description=DoodleToday temporary HTTPS tunnel
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8101
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/doodletoday-quick-tunnel.log
+StandardError=append:/var/log/doodletoday-quick-tunnel.log
+
+[Install]
+WantedBy=multi-user.target
