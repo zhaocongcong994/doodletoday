@@ -70,17 +70,6 @@ npm run build
 
 轨迹包括任务耗时、token、工具失败、页面数、下载请求，不记录提示词、原始票面、参数、模型响应或密钥。不要开启 httpx/SDK debug 日志。下载请求数不能证明保存成功，需结合 `docs/trial.csv` 的反馈。
 
-## 单机容器
-
-已提供 Dockerfile、Compose。准备独立 `.env` 后：
-
-```bash
-docker compose up --build -d
-```
-
-Compose 只发布应用的 8101 端口，内部渲染服务不外露。生产域名应通过同源 HTTPS 反向代理接入，并将 `.env` 的 `SECURE_COOKIE=true`；不要将 Vite 开发服务器用于正式部署。
-
-本次未发布外网。备份可停机复制整个 `data/`；恢复需要数据库与全部素材/版本文件，不能只还原 SQLite。会话 Cookie 不在服务端明文保存。
 
 ## 设计依据
 
