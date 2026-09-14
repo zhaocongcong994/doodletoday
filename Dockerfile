@@ -8,7 +8,9 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:24-bookworm-slim
-RUN apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update \
+ARG APT_MIRROR_HOST=deb.debian.org
+RUN sed -i "s|deb.debian.org|${APT_MIRROR_HOST}|g" /etc/apt/sources.list.d/debian.sources \
+ && apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update \
  && apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends python3 python3-venv libgomp1 libglib2.0-0 libgl1 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
