@@ -93,8 +93,8 @@ the deployment environment, never in tracked files.
 
 ## Temporary mobile HTTPS access
 
-For internal mobile review without a domain, install `cloudflared` and enable
-[`deploy/doodletoday-quick-tunnel.service`](deploy/doodletoday-quick-tunnel.service).
-It forwards only to the local application port and restarts automatically. The
-generated `trycloudflare.com` URL is temporary and may change after a restart;
-use a real domain and managed Cloudflare Tunnel before public launch.
+For internal mobile review without a domain, the Compose stack starts an
+official `cloudflared` container that forwards only to the local application
+service and restarts automatically. The generated `trycloudflare.com` URL is
+temporary and may change after a restart; use a real domain and managed
+Cloudflare Tunnel before public launch.
