@@ -208,13 +208,14 @@ def test_album_cross_asset_injection(client):
 def test_details_strict(field,value):
     with pytest.raises(ValidationError):schemas.AssetDetail.model_validate({'id':'a'*32,field:value})
 
-def test_csrf_auth_private_boundaries(client):
+def test_csrf_auth_private_boundaries(client,monkeypatch):
     if config.KIND=='card':result=create(client)
     else:result=upload(client).json()
     wid=result['work_id'];tid=result['task_id']
     other=TestClient(app,headers={'X-Requested-With':'studio'})
     assert other.get('/api/works/'+wid).status_code==401
-    other.post('/api/session',json={'invite':'test-invitation'})
+    monkeypatch.setattr(config,'EXTRA_INVITES',('zcc-code',))
+    other.post('/api/session',json={'invite':'zcc-code'})
     for path in ['/api/works/'+wid,'/api/tasks/'+tid,f'/api/works/{wid}/versions/x/page-01.png',f'/api/works/{wid}/assets/x']:
         assert other.get(path).status_code==404
     assert other.delete('/api/works/'+wid).status_code==404
@@ -235,6 +236,15 @@ def test_extra_invite_and_logout_revoke_browser_session(monkeypatch):
     assert logged_out.status_code==200 and logged_out.json()=={'ok':True}
     assert visitor.get('/api/session').status_code==401
     visitor.close()
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+def test_same_invite_shares_workspace_across_devices(client):
+    result=create(client)
+    phone=TestClient(app,headers={'X-Requested-With':'studio'})
+    assert phone.post('/api/session',json={'invite':'test-invitation'}).status_code==200
+    assert phone.get('/api/works').json()[0]['id']==result['work_id']
+    assert phone.get('/api/session').json()['user_id']==client.get('/api/session').json()['user_id']
+    phone.close()
 
 def test_redaction_and_safe_traces(client):
     text=redact('身份证：110101199901011234\n订单号 AB123456789\n2026-09-12 展览\n姓名 张三\n手机号 13800138000')

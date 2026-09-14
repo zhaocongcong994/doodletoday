@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import hashlib
 import os
 from dotenv import load_dotenv
 
@@ -32,3 +33,13 @@ def model_ready():
 def invites():
     """Return configured invite codes without changing the legacy .env key."""
     return tuple(code for code in (INVITE, *EXTRA_INVITES) if code)
+
+def user_id_for_invite(invite: str) -> str:
+    """Return the stable workspace identity represented by an invite code.
+
+    The invite is intentionally the workspace key: every device that enters
+    the same code should see the same works.  Keep this deterministic across
+    restarts and deployments so the workspace does not move when a cookie is
+    lost.
+    """
+    return hashlib.sha256(f'doodletoday:invite:{invite}'.encode()).hexdigest()[:32]

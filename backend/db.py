@@ -56,6 +56,40 @@ def run(sql, args=()):
     with connect() as c:
         c.execute(sql, args)
 
+def merge_user(old_user_id: str, new_user_id: str):
+    """Move an old browser-local account into its invite workspace.
+
+    Older sessions used random user IDs.  On the first re-login after the
+    stable invite identity is enabled, migrate all user-owned data in one
+    transaction so existing works remain available on every device.
+    """
+    if not old_user_id or old_user_id == new_user_id:
+        return
+    with connect() as c:
+        c.execute('BEGIN IMMEDIATE')
+        c.execute('UPDATE works SET user_id=? WHERE user_id=?', (new_user_id, old_user_id))
+        c.execute('UPDATE tasks SET user_id=? WHERE user_id=?', (new_user_id, old_user_id))
+        c.execute('UPDATE sessions SET user_id=? WHERE user_id=?', (new_user_id, old_user_id))
+
+        # Keep the workspace preference if it already exists; otherwise carry
+        # over the old browser's choice.
+        c.execute(
+            'INSERT OR IGNORE INTO preferences(user_id,style) '
+            'SELECT ?,style FROM preferences WHERE user_id=?',
+            (new_user_id, old_user_id),
+        )
+        c.execute('DELETE FROM preferences WHERE user_id=?', (old_user_id,))
+
+        # Quota is a shared workspace limit. Merge usage rather than allowing
+        # two old browser accounts to double the daily allowance.
+        for row in c.execute('SELECT day,used FROM quota WHERE user_id=?', (old_user_id,)).fetchall():
+            c.execute(
+                'INSERT INTO quota(user_id,day,used) VALUES(?,?,?) '
+                'ON CONFLICT(user_id,day) DO UPDATE SET used=used+excluded.used',
+                (new_user_id, row['day'], row['used']),
+            )
+        c.execute('DELETE FROM quota WHERE user_id=?', (old_user_id,))
+
 def trace(task_id, event, **detail):
     # Allowlisted numeric telemetry only. Never persist prompts, OCR, args or provider bodies.
     safe = {k: v for k, v in detail.items() if k in {'tool','ok','ms','round','prompt_tokens','completion_tokens','pages','code'}}
