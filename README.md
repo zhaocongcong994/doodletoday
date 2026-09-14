@@ -90,3 +90,11 @@ git config core.hooksPath .githooks
 The same check runs in GitHub Actions for pushes and pull requests. Real model
 keys, server addresses, invitation credentials, and user data belong only in
 the deployment environment, never in tracked files.
+
+## Temporary mobile HTTPS access
+
+For internal mobile review without a domain, install `cloudflared` and enable
+[`deploy/doodletoday-quick-tunnel.service`](deploy/doodletoday-quick-tunnel.service).
+It forwards only to the local application port and restarts automatically. The
+generated `trycloudflare.com` URL is temporary and may change after a restart;
+use a real domain and managed Cloudflare Tunnel before public launch.
