@@ -6,27 +6,12 @@
 
 依赖：Node.js 22.12+（本机验证 Node 24）、Python 3.10+。
 
-```bash
-cd /Users/apple/AI/今日人格卡
-python3 scripts/setup.py
-npm start
-```
 
-访问 **http://127.0.0.1:8101**。当前工作区已初始化依赖和独立 `.env`，可直接 `npm start`。开发模式 `npm run dev` 使用 http://127.0.0.1:5101 并代理同源 API。同一项目不能同时启动 start 与 dev。
+当前工作区已初始化依赖和独立 `.env`，可直接 `npm start`。开发模式 `npm run dev` 使用 http://127.0.0.1:5101 并代理同源 API。同一项目不能同时启动 start 与 dev。
 
 初始化脚本为本项目生成邀请口令 `INVITE_CODE` 和内部 `RENDER_TOKEN`，保存在权限为 600 的 `.env`。在本机编辑器中查看口令。30 天浏览器会话绑定独立身份；清除 Cookie、换浏览器或会话过期后，旧作品不会自动关联回来。内测需要保留同一浏览器。
 
 `Ctrl+C` 停止服务；任务持久化，重启恢复。每项目只能运行一个 API worker，不要加 `--workers`。两项目的数据、口令、端口、依赖、进程互不依赖。
-
-## 配置真实模型
-
-编辑本项目 `.env`：
-
-```dotenv
-MODEL_BASE_URL=https://your-provider.example/v1
-MODEL_ID=your-tool-capable-model
-MODEL_API_KEY=your-private-key
-```
 
 服务地址需兼容 Chat Completions：向 `MODEL_BASE_URL/chat/completions` 发送请求，使用 Bearer 认证和 function tools。当前只有这个协议适配器，不宣称支持所有供应商的原生 API。可选云端图片理解还要求同一模型支持 `image_url`。配置后执行小额真实验证，再重启：
 
