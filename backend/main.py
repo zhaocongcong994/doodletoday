@@ -104,15 +104,19 @@ def login(body:schemas.Login,request:Request,response:Response):
     codes=config.invites()
     if not codes: raise HTTPException(503,'邀请口令尚未配置，请运行初始化脚本')
     bucket.append(now)
-    if not any(hmac.compare_digest(body.invite.encode(),code.encode()) for code in codes): raise HTTPException(401,'邀请口令不正确')
+    accepted = next((code for code in codes if hmac.compare_digest(body.invite.encode(), code.encode())), None)
+    if accepted is None: raise HTTPException(401,'邀请口令不正确')
+    workspace_user_id = config.user_id_for_invite(accepted)
     try:
         existing=user(request)
-        return {'user_id':existing}
+        if existing != workspace_user_id:
+            db.merge_user(existing, workspace_user_id)
+        return {'user_id':workspace_user_id}
     except HTTPException: pass
-    raw=secrets.token_urlsafe(32); user_id=db.uid()
-    db.run('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(raw.encode()).hexdigest(),user_id,now+30*86400))
+    raw=secrets.token_urlsafe(32)
+    db.run('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(raw.encode()).hexdigest(),workspace_user_id,now+30*86400))
     response.set_cookie(config.COOKIE,raw,httponly=True,secure=config.SECURE_COOKIE,samesite='strict',max_age=30*86400)
-    return {'user_id':user_id}
+    return {'user_id':workspace_user_id}
 
 @app.delete('/api/session')
 def logout(request:Request,response:Response):
