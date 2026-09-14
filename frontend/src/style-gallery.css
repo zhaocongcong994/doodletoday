@@ -1,0 +1,36 @@
+/* Registry-driven gallery additions. The output PNG itself remains renderer-owned. */
+.card-app .style-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card-app .style-choice{min-width:0}
+.card-app .style-choice>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.style-description{min-height:32px;margin-top:10px;color:var(--muted);font-size:10px;line-height:1.6}
+.session-actions{display:flex;align-items:center;gap:13px}.logout-button{font-size:10px;color:var(--muted);padding:5px 0;border-bottom:1px solid transparent}.logout-button:hover:not(:disabled){color:var(--ink);border-bottom-color:currentColor}
+.swatch-receipt{background:#eee3cc;color:#403a31;background-image:repeating-linear-gradient(90deg,transparent 0 8px,#806f5d 8px 9px,transparent 9px 17px);background-size:100% 1px;background-position:center;background-repeat:no-repeat}
+.swatch-receipt:before{content:'NO. 24H';position:absolute;right:8px;top:9px;font-size:7px;letter-spacing:1px}.swatch-receipt:after{content:'';position:absolute;left:12px;right:12px;bottom:19px;border-top:1px dashed currentColor}
+.swatch-doodle{background:#fff8e8;color:#554c77}.swatch-doodle:before{content:'';position:absolute;width:67px;height:33px;background:#ef9b8d;border:1px solid currentColor;border-radius:4px;transform:rotate(-8deg);left:24px;top:41px}.swatch-doodle:after{content:'✦';position:absolute;right:11px;bottom:7px;font-size:25px;color:#9dcaad}
+.swatch-neon{background:#111426;color:#f6ed9c}.swatch-neon:before{content:'';position:absolute;width:68px;height:68px;right:-14px;bottom:-21px;border-radius:50%;background:#f165d3;box-shadow:-27px -19px 0 #57e5e3}.swatch-neon i,.swatch-neon b{color:#57e5e3;background:#57e5e3}
+.swatch-soft-diary{background:#f8edf0;color:#786477}.swatch-soft-diary:before{content:'';position:absolute;width:76px;height:52px;background:#f2c9be;border-radius:50%;right:-8px;top:30px}.swatch-soft-diary:after{content:'';position:absolute;width:47px;height:47px;background:#c7d9c8;border-radius:50%;left:26px;bottom:-13px}
+.swatch-archive{background-color:#e9eee7;color:#2f453f;background-image:linear-gradient(#b9c8bf 1px,transparent 1px),linear-gradient(90deg,#b9c8bf 1px,transparent 1px);background-size:16px 16px}.swatch-archive:before{content:'FILE 001';position:absolute;right:8px;top:9px;font-size:7px;letter-spacing:1px;color:#d47b5c}.swatch-archive i,.swatch-archive b{background:#d47b5c}
+/* Card creation is a compact horizontal control strip; the work stage follows it. */
+.card-app .workspace{grid-template-columns:minmax(0,1fr);gap:18px}
+.card-app .card-editor{padding:22px 28px;display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.card-editor .section-heading{margin-bottom:18px}
+.card-editor .state-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.card-editor .state-inputs>div{min-width:0}
+.card-editor .state-inputs input{min-width:0}
+.card-editor .suggestions{margin-top:9px}
+.card-editor .memory-control{margin-top:17px;padding:11px 14px;border:1px solid var(--line);border-radius:8px;background:#faf9f5}
+.card-editor .memory-control summary{cursor:pointer;font-size:12px;color:var(--ink)}
+.card-editor .memory-control summary span{font-size:10px;color:var(--muted);margin-left:8px}
+.card-editor .memory-control .field-label{margin:15px 0 9px}
+.card-editor .field-label{margin:20px 0 10px}
+.card-editor .style-grid{display:flex;overflow-x:auto;grid-template-columns:none;padding:1px 1px 7px;scroll-snap-type:x proximity}
+.card-editor .style-choice{flex:0 0 112px;scroll-snap-align:start}
+.card-editor .style-swatch{height:63px;padding:9px}
+.card-editor .style-swatch>span{font-size:28px}
+.card-editor .style-description{min-height:auto;margin:4px 0 0}
+.card-editor .preference{margin-top:8px}
+.card-editor .primary.full{margin-top:20px}
+.style-change-hint{margin:9px 0 -8px;font-size:10px;line-height:1.6;color:var(--accent)}
+.revision-action{position:relative;justify-content:center!important}.revision-action>span{margin:auto}.revision-action>svg{position:absolute;right:18px;margin:0!important}
+.card-app .preview-area{min-height:0;padding:28px}
+@media(max-width:760px){.card-app .style-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.style-swatch{height:72px}.session-actions{margin-left:auto}.logout-button{font-size:9px}}

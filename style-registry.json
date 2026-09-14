@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "styles": [
+    {
+      "id": "magazine",
+      "name": "杂志封面",
+      "description": "大标题与几何色块，像今天的限量刊。",
+      "preview": "editorial",
+      "recipe": {"base_layout": "editorial", "palette": ["#3e394f", "#d4e49b", "#f6f0e5"], "decoration": ["orb", "fine-line"], "typography": "display-sans", "copy_tone": "轻松、有辨识度"}
+    },
+    {
+      "id": "labels",
+      "name": "趣味标签",
+      "description": "倾斜贴纸与彩色标签，轻松一点。",
+      "preview": "stickers",
+      "recipe": {"base_layout": "sticker-stack", "palette": ["#f2e9d4", "#d2ec7d", "#bcb4e4", "#f4a685"], "decoration": ["label", "tilt"], "typography": "display-sans", "copy_tone": "俏皮、带一点冷幽默"}
+    },
+    {
+      "id": "minimal",
+      "name": "简洁海报",
+      "description": "低饱和留白，让一句话站在中央。",
+      "preview": "minimal",
+      "recipe": {"base_layout": "minimal-poster", "palette": ["#eeeee8", "#252524", "#62635f"], "decoration": ["rule"], "typography": "editorial-serif", "copy_tone": "克制、安静"}
+    },
+    {
+      "id": "receipt",
+      "name": "复古票据",
+      "description": "编号、虚线与纸张感，把今天归档。",
+      "preview": "receipt",
+      "recipe": {"base_layout": "receipt", "palette": ["#eee3cc", "#403a31", "#bd654c"], "decoration": ["perforation", "serial-number", "stamp"], "typography": "mono-editorial", "copy_tone": "怀旧、像一张被留存的凭据"}
+    },
+    {
+      "id": "doodle",
+      "name": "涂鸦手账",
+      "description": "便利贴、彩笔和随手写下的心情。",
+      "preview": "doodle",
+      "recipe": {"base_layout": "notebook", "palette": ["#fff8e8", "#554c77", "#ef9b8d", "#9dcaad"], "decoration": ["tape", "scribble", "note"], "typography": "friendly-sans", "copy_tone": "松弛、像朋友的便签"}
+    },
+    {
+      "id": "neon",
+      "name": "夜航霓虹",
+      "description": "深夜色与荧光字，为城市情绪留灯。",
+      "preview": "neon",
+      "recipe": {"base_layout": "night-grid", "palette": ["#111426", "#f165d3", "#57e5e3", "#f6ed9c"], "decoration": ["neon-orb", "grid", "signal"], "typography": "display-sans", "copy_tone": "夜晚、城市感、有能量"}
+    },
+    {
+      "id": "soft-diary",
+      "name": "柔焦日记",
+      "description": "柔和圆形与浅色留白，给情绪一点缓冲。",
+      "preview": "soft",
+      "recipe": {"base_layout": "soft-diary", "palette": ["#f8edf0", "#786477", "#f2c9be", "#c7d9c8"], "decoration": ["soft-orb", "frame"], "typography": "editorial-serif", "copy_tone": "细腻、温柔、不煽情"}
+    },
+    {
+      "id": "archive",
+      "name": "数字档案",
+      "description": "网格、坐标与信息块，冷静地记录此刻。",
+      "preview": "archive",
+      "recipe": {"base_layout": "archive-grid", "palette": ["#e9eee7", "#2f453f", "#a4b49e", "#d47b5c"], "decoration": ["grid", "index", "data-block"], "typography": "mono-editorial", "copy_tone": "冷静、观察式、自我整理"}
+    }
+  ]
+}
