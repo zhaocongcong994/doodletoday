@@ -6,3 +6,8 @@ data/
 __pycache__/
 .pytest_cache/
 .DS_Store
+
+# benchmark artifacts (regenerable)
+docs/评测/runs/
+docs/评测/*.xlsx
+docs/评测/preview-*.png

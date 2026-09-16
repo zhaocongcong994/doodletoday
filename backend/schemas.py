@@ -83,6 +83,21 @@ class Preference(Strict):
     def style_valid(cls, v):
         return _style_id(v)
 
+class StyleCreate(Strict):
+    name: str = Field(min_length=1, max_length=40)
+    recipe: StyleRecipe
+
+class StyleUpdate(Strict):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=40)
+    recipe: Optional[StyleRecipe] = None
+
+class StylePreview(Strict):
+    recipe: StyleRecipe
+
+class CreateStyleTool(Strict):
+    """Model-facing tool payload; the server assigns the fixed name."""
+    recipe: StyleRecipe
+
 class Empty(Strict):
     pass
 
