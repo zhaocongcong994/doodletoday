@@ -388,3 +388,90 @@ def test_cloud_optin_is_explicit_and_output_stays_unconfirmed(client):
     meta=json.loads(db.rows('SELECT * FROM assets')[0]['meta'])
     assert meta['inspection']['source']=='cloud_unconfirmed' and not meta['reviewed']
     assert 'AB123456789' not in meta['inspection']['vision_text']
+
+CUSTOM_RECIPE={'base_layout':'night-grid','palette':['#0b0b1e','#ff9ad5','#7bf1a8','#ffffff'],'decoration':['neon-orb','grid'],'typography':'display-sans','copy_tone':'甜酷、夜色'}
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+def test_custom_style_crud_and_limit(client):
+    ids=[]
+    for i in range(3):
+        response=client.post('/api/styles',json={'name':f'我的风格 {i+1}','recipe':CUSTOM_RECIPE})
+        assert response.status_code==200
+        ids.append(response.json()['id'])
+    assert all(i.startswith('u_') for i in ids)
+    mine=client.get('/api/styles').json()
+    assert len(mine['mine'])==3 and len(mine['built_in'])==8
+    assert client.post('/api/styles',json={'name':'第四个','recipe':CUSTOM_RECIPE}).status_code==409
+    assert client.put(f'/api/styles/{ids[0]}',json={'name':'改名后'}).json()=={'ok':True}
+    assert client.get('/api/styles').json()['mine'][0]['name']=='改名后'
+    assert client.delete(f'/api/styles/{ids[0]}').json()=={'ok':True}
+    assert len(client.get('/api/styles').json()['mine'])==2
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+@pytest.mark.parametrize('recipe',[
+ {**CUSTOM_RECIPE,'base_layout':'arbitrary-css'},
+ {**CUSTOM_RECIPE,'palette':['#0b0b1e']},
+ {**CUSTOM_RECIPE,'palette':['#0b0b1e','not-a-color']},
+ {**CUSTOM_RECIPE,'decoration':['orb']},
+ {**CUSTOM_RECIPE,'typography':'comic-sans'},
+])
+def test_custom_style_recipe_whitelist(client,recipe):
+    assert client.post('/api/styles',json={'name':'x','recipe':recipe}).status_code==422
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+def test_custom_style_ownership_isolated(client,monkeypatch):
+    created=client.post('/api/styles',json={'name':'私密风格','recipe':CUSTOM_RECIPE}).json()
+    monkeypatch.setattr(config,'EXTRA_INVITES',('test-invitation','second-invite'))
+    client.delete('/api/session')
+    assert client.post('/api/session',json={'invite':'second-invite'}).status_code==200
+    assert client.get('/api/styles').json()['mine']==[]
+    assert client.put(f"/api/styles/{created['id']}",json={'name':'抢注'}).status_code==404
+    assert client.delete(f"/api/styles/{created['id']}").status_code==404
+    assert client.post('/api/cards',json={'states':['困','想出门','不想社交'],'style':created['id']}).status_code==422
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+def test_preview_renders_counts_quota_and_is_private(client,renderer):
+    assert client.get('/api/session').json()['used']==0
+    result=client.post('/api/styles/preview',json={'recipe':CUSTOM_RECIPE}).json()
+    final=drive(result)
+    assert final['status']=='completed',final.get('error')
+    assert client.get('/api/session').json()['used']==1
+    png=client.get(f"/api/previews/{result['task_id']}/page-01.png")
+    assert png.status_code==200 and Image.open(io.BytesIO(png.content)).size==(1080,1440)
+    assert client.get('/api/works').json()==[]  # pseudo work stays hidden
+    assert client.get(f"/api/previews/{result['task_id']}/../secret.png").status_code==404
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+def test_create_style_tool_fixed_name_limit_and_render(client,renderer):
+    user_id=db.one('SELECT user_id FROM sessions')['user_id']
+    result=create(client)
+    ctx=Context(user_id,result['work_id'],result['task_id'],{},None)
+    made=[]
+    for i in range(3):
+        made.append(asyncio.run(ctx.execute('create_style',{'recipe':CUSTOM_RECIPE})))
+    assert made[0]['name']=='自定义·夜航霓虹'
+    assert made[1]['name']=='自定义·夜航霓虹 2'
+    assert made[2]['remaining']==0
+    with pytest.raises(ToolError): asyncio.run(ctx.execute('create_style',{'recipe':CUSTOM_RECIPE}))
+    other=Context('f'*32,'w'*32,'t'*32,{},None)
+    with pytest.raises(ToolError): asyncio.run(other.execute('create_style',{'recipe':CUSTOM_RECIPE}))
+    custom={**CARD,'style':made[0]['id']}
+    result=client.post('/api/cards',json={'states':['困','想出门','不想社交'],'style':made[0]['id']}).json()
+    model=Scripted(call('render_card',custom))
+    assert drive(result,model)['status']=='completed'
+    work=client.get('/api/works/'+result['work_id']).json()
+    snapshot=work['versions'][0]['content']['style_snapshot']
+    assert snapshot['name']=='自定义·夜航霓虹' and snapshot['recipe']['palette'][1]=='#ff9ad5'
+
+@pytest.mark.skipif(config.KIND!='card',reason='card project')
+def test_deleted_custom_style_keeps_history_renderable(client,renderer):
+    sid=client.post('/api/styles',json={'name':'即将删除','recipe':CUSTOM_RECIPE}).json()['id']
+    custom={**CARD,'style':sid}
+    result=client.post('/api/cards',json={'states':['困','想出门','不想社交'],'style':sid}).json()
+    assert drive(result,Scripted(call('render_card',custom)))['status']=='completed'
+    wid=result['work_id'];url=f"/api/works/{wid}/versions/{client.get('/api/works/'+wid).json()['versions'][0]['id']}/page-01.png"
+    before=client.get(url).content
+    assert client.delete(f'/api/styles/{sid}').json()=={'ok':True}
+    rerender=client.post(f'/api/works/{wid}/card-content',json=custom).json()
+    assert drive(rerender)['status']=='completed'
+    assert client.get(url).content==before
