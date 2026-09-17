@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import io
 import json
+import re
 import secrets
 import shutil
 import time
@@ -14,7 +15,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response, UploadFi
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageOps, UnidentifiedImageError
-from . import config, db, schemas
+from . import config, db, schemas, styles
 from .tools import save_preference
 from .worker import worker_loop, recover
 
@@ -30,6 +31,7 @@ async def lifespan(app):
 
 app=FastAPI(title=config.APP['name'],lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url='/api/openapi.json')
 attempts=defaultdict(deque)
+PREVIEW_FILE=re.compile(r'page-[0-9]{2}\.png')
 
 @app.middleware('http')
 async def boundaries(request,call_next):
@@ -146,7 +148,7 @@ def me(user_id=Depends(user)):
 
 @app.get('/api/works')
 def works(user_id=Depends(user)):
-    return db.rows('SELECT id,title,created FROM works WHERE user_id=? ORDER BY created DESC',(user_id,))
+    return db.rows('SELECT id,title,created FROM works WHERE user_id=? AND id NOT LIKE ? ORDER BY created DESC',(user_id,'preview-%'))
 
 @app.get('/api/works/{work_id}')
 def get_work(work_id:str,user_id=Depends(user)):
@@ -169,6 +171,10 @@ def create_card(body:schemas.CardInput,user_id=Depends(user)):
     if payload['style'] is None:
         pref=db.one('SELECT style FROM preferences WHERE user_id=?',(user_id,))
         payload['style']=pref['style'] if pref else 'magazine'
+    try:
+        styles.resolve(payload['style'],user_id)
+    except styles.StyleError:
+        raise HTTPException(422,'不支持该表达风格') from None
     work_id=db.uid()
     with db.connect() as c:
         c.execute('BEGIN IMMEDIATE')
@@ -189,17 +195,93 @@ def revise(work_id:str,body:schemas.Revision,user_id=Depends(user)):
     payload['base_version_id']=base['id']
     if payload['style'] is None:
         payload['style']=json.loads(base['content']).get('style','magazine')
+    try:
+        styles.resolve(payload['style'],user_id)
+    except styles.StyleError:
+        raise HTTPException(422,'不支持该表达风格') from None
     return enqueue(work_id,user_id,'generate',payload)
 
 @app.put('/api/preferences')
 def preference(body:schemas.Preference,user_id=Depends(user)):
     kind('card')
+    try:
+        styles.resolve(body.style,user_id)
+    except styles.StyleError:
+        raise HTTPException(422,'不支持该表达风格') from None
     return save_preference(user_id,body.style,explicit=True)
 
 @app.delete('/api/preferences')
 def clear_preference(user_id=Depends(user)):
     db.run('DELETE FROM preferences WHERE user_id=?',(user_id,))
     return {'ok':True}
+
+def style_mine(user_id):
+    return [{'id':r['id'],'name':r['name'],'recipe':json.loads(r['recipe']),'created':r['created']}
+            for r in db.rows('SELECT * FROM user_styles WHERE user_id=? ORDER BY created',(user_id,))]
+
+def own_style(style_id,user_id):
+    row=db.one('SELECT * FROM user_styles WHERE id=? AND user_id=?',(style_id,user_id))
+    if not row: raise HTTPException(404,'风格不存在')
+    return row
+
+@app.get('/api/styles')
+def list_styles(user_id=Depends(user)):
+    kind('card')
+    return {'built_in':[s for s in styles.context() if s['id'] in styles.STYLE_IDS],'mine':style_mine(user_id)}
+
+def checked_recipe(recipe):
+    try:
+        return styles.validate_recipe(recipe)
+    except styles.StyleError as e:
+        raise HTTPException(422,str(e)) from None
+
+@app.post('/api/styles')
+def create_style(body:schemas.StyleCreate,user_id=Depends(user)):
+    kind('card')
+    if styles.custom_count(user_id)>=styles.MAX_CUSTOM_STYLES:
+        raise HTTPException(409,'风格最多 3 个，请先删除一个')
+    recipe=checked_recipe(body.recipe)
+    sid='u_'+secrets.token_hex(4)
+    db.run('INSERT INTO user_styles VALUES(?,?,?,?,?)',(sid,user_id,body.name,db.dumps(recipe),time.time()))
+    return {'id':sid}
+
+@app.put('/api/styles/{style_id}')
+def update_style(style_id:str,body:schemas.StyleUpdate,user_id=Depends(user)):
+    kind('card'); own_style(style_id,user_id)
+    name=body.name if body.name is not None else None
+    recipe=checked_recipe(body.recipe) if body.recipe is not None else None
+    if name is not None: db.run('UPDATE user_styles SET name=? WHERE id=?',(name,style_id))
+    if recipe is not None: db.run('UPDATE user_styles SET recipe=? WHERE id=?',(db.dumps(recipe),style_id))
+    return {'ok':True}
+
+@app.delete('/api/styles/{style_id}')
+def delete_style(style_id:str,user_id=Depends(user)):
+    kind('card'); own_style(style_id,user_id)
+    db.run('DELETE FROM user_styles WHERE id=?',(style_id,))
+    return {'ok':True}
+
+@app.post('/api/styles/preview')
+def preview_style(body:schemas.StylePreview,user_id=Depends(user)):
+    kind('card')
+    recipe=checked_recipe(body.recipe)
+    # Preview is a queued render task without a model call. It rides a
+    # per-user pseudo work so the tasks FK holds; pseudo works are hidden
+    # from the works list and are never user-facing creations.
+    pseudo='preview-'+user_id
+    with db.connect() as c:
+        c.execute('BEGIN IMMEDIATE')
+        c.execute('INSERT OR IGNORE INTO works VALUES(?,?,?,?,?)',(pseudo,user_id,'风格预览','{}',time.time()))
+        result=enqueue(pseudo,user_id,'preview',{'recipe':recipe},c)
+    return result
+
+@app.get('/api/previews/{task_id}/{filename}')
+def preview_file(task_id:str,filename:str,user_id=Depends(user)):
+    task=db.one('SELECT user_id,status FROM tasks WHERE id=?',(task_id,))
+    if not task or task['user_id']!=user_id: raise HTTPException(404,'预览不存在')
+    if not PREVIEW_FILE.fullmatch(filename): raise HTTPException(404,'预览不存在')
+    path=config.DATA/'previews'/task_id/filename
+    if not path.is_file(): raise HTTPException(404,'预览产物已清理，请重新预览')
+    return FileResponse(path)
 
 @app.post('/api/works/{work_id}/card-content')
 def edit_card(work_id:str,body:schemas.Card,user_id=Depends(user)):
@@ -312,6 +394,7 @@ def download(work_id:str,version_id:str,filename:str,download:bool=False,user_id
 
 @app.delete('/api/works/{work_id}')
 def delete_work(work_id:str,user_id=Depends(user)):
+    if work_id.startswith('preview-'): raise HTTPException(404,'作品不存在')
     own(work_id,user_id)
     with db.connect() as c:
         c.execute('BEGIN IMMEDIATE')

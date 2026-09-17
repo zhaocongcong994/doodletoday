@@ -1,10 +1,39 @@
 import asyncio
+import base64
+import io
 import json
 import time
-from . import config, db, schemas
+import httpx
+from PIL import Image
+from . import config, db, schemas, styles
 from .agent import run_agent
 from .provider import Provider, ModelUnavailable, ModelFailure
 from .tools import Context, ToolError
+
+SAMPLE_PREVIEW={'title':'今日精神状态','subtitle':'三个状态，一张封面，只记录此刻的自己。','tags':['状态一','状态二','状态三']}
+
+async def render_preview(task,payload):
+    content={**SAMPLE_PREVIEW,'style':'preview','style_snapshot':{'id':'preview','name':'风格预览','registry_version':styles.REGISTRY_VERSION,'recipe':payload['recipe']}}
+    body={'kind':'card','content':content,'images':{}}
+    pages=None
+    for attempt in range(config.RETRIES+1):
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                r=await client.post(config.RENDER_URL+'/render',headers={'X-Render-Token':config.RENDER_TOKEN},json=body)
+                r.raise_for_status()
+                pages=r.json()['pages']
+                if len(pages)!=1: raise ValueError('page count mismatch')
+                break
+        except (httpx.HTTPError,ValueError,KeyError):
+            if attempt==config.RETRIES: raise ToolError('渲染服务失败，请检查服务后重试') from None
+            await asyncio.sleep(.3*(attempt+1))
+    folder=config.DATA/'previews'/task['id']
+    folder.mkdir(parents=True,exist_ok=True)
+    data=base64.b64decode(pages[0],validate=True)
+    im=Image.open(io.BytesIO(data)); im.verify()
+    if im.size!=(1080,1440) or im.format!='PNG': raise ToolError('渲染尺寸或格式无效')
+    (folder/'page-01.png').write_bytes(data)
+    return {'status':'completed','files':['page-01.png']}
 
 async def process(task, provider=None):
     payload=json.loads(task['payload'])
@@ -18,6 +47,8 @@ async def process(task, provider=None):
             assets=ctx.assets()
             await ctx.execute('inspect_assets',{'asset_ids':[a['id'] for a in assets]})
             result=await ctx.execute('request_details',{'questions':['请核对每张素材的日期、地点与顺序；不记得的信息可以留白。']})
+        elif task['kind']=='preview':
+            result=await render_preview(task,payload)
         elif task['kind']=='manual':
             if config.KIND=='card': await ctx.execute('render_card',payload['content'])
             else:
