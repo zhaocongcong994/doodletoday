@@ -9,10 +9,23 @@ class ModelFailure(Exception):
     pass
 
 class Provider:
+    def __init__(self, models=None):
+        self._models = list(models) if models else None
+
     async def complete(self, messages, tools=None):
         if not config.model_ready():
             raise ModelUnavailable('模型未配置，请在 .env 中设置服务地址、模型和凭据。')
-        body = {'model':config.MODEL_ID, 'messages':messages, 'max_tokens':2400}
+        models = self._models or list(dict.fromkeys(m for m in (config.MODEL_ID, config.MODEL_FALLBACK_ID) if m))
+        failure = None
+        for model in models:
+            try:
+                return await self._complete(model, messages, tools)
+            except ModelFailure as e:
+                failure = e
+        raise failure
+
+    async def _complete(self, model, messages, tools=None):
+        body = {'model':model, 'messages':messages, 'max_tokens':2400}
         if tools:
             body.update(tools=tools, tool_choice='auto')
         for attempt in range(config.RETRIES + 1):

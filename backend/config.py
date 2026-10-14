@@ -18,6 +18,7 @@ SECURE_COOKIE = os.getenv('SECURE_COOKIE', 'false').lower() == 'true'
 MODEL_URL = os.getenv('MODEL_BASE_URL', '').rstrip('/')
 MODEL_KEY = os.getenv('MODEL_API_KEY', '')
 MODEL_ID = os.getenv('MODEL_ID', '')
+MODEL_FALLBACK_ID = os.getenv('MODEL_FALLBACK_ID', '')
 MODEL_TIMEOUT = float(os.getenv('MODEL_TIMEOUT', '45'))
 MAX_ROUNDS = int(os.getenv('MAX_ROUNDS', '8'))
 RETRIES = int(os.getenv('MAX_RETRIES', '2'))

@@ -5,14 +5,17 @@ from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from backend.provider import Provider,ModelFailure,ModelUnavailable
+from backend import config
 
 async def main():
     schema={'type':'function','function':{'name':'connection_ok','description':'确认连接成功','parameters':{'type':'object','properties':{},'additionalProperties':False}}}
-    message,usage=await Provider().complete([{'role':'user','content':'请调用 connection_ok 工具确认连接。'}],[schema])
-    calls=message.get('tool_calls') or []
-    if not any(c.get('function',{}).get('name')=='connection_ok' for c in calls):
-        raise ModelFailure('服务可响应，但未返回工具调用。请使用支持工具调用的模型。')
-    print('真实模型工具调用成功。用量：', {k:usage.get(k,0) for k in ['prompt_tokens','completion_tokens']})
+    models=[m for m in dict.fromkeys([config.MODEL_ID,config.MODEL_FALLBACK_ID]) if m]
+    for model in models:
+        message,usage=await Provider(models=[model]).complete([{'role':'user','content':'请调用 connection_ok 工具确认连接。'}],[schema])
+        calls=message.get('tool_calls') or []
+        if not any(c.get('function',{}).get('name')=='connection_ok' for c in calls):
+            raise ModelFailure(f'{model} 可响应，但未返回工具调用。请使用支持工具调用的模型。')
+        print(f'{model} 工具调用成功。用量：', {k:usage.get(k,0) for k in ['prompt_tokens','completion_tokens']})
 
 try:asyncio.run(main())
 except (ModelFailure,ModelUnavailable) as e:raise SystemExit(str(e))

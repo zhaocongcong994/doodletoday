@@ -4,6 +4,7 @@ import io
 import json
 import os
 from pathlib import Path
+import secrets
 import shutil
 import time
 import zipfile
@@ -47,17 +48,40 @@ class Context:
 
     async def get_style_context(self,args):
         pref=db.one('SELECT style FROM preferences WHERE user_id=?',(self.user_id,))
-        return {'styles':styles.context(),'preference':pref['style'] if pref else None,'current':self.current()}
+        builtin=[s for s in styles.context() if s['id'] in styles.STYLE_IDS]
+        mine=[s for s in styles.context(self.user_id) if s['id'] not in styles.STYLE_IDS]
+        return {'styles':builtin,'mine':mine,'preference':pref['style'] if pref else None,'current':self.current()}
+
+    async def create_style(self,args):
+        if styles.custom_count(self.user_id)>=styles.MAX_CUSTOM_STYLES:
+            raise ToolError('自定义风格最多 3 个；请让用户先删除一个旧风格。')
+        recipe=styles.validate_recipe(args.recipe)
+        existing={r['name'] for r in db.rows('SELECT name FROM user_styles WHERE user_id=?',(self.user_id,))}
+        sid='u_'+secrets.token_hex(4)
+        name=styles.fixed_name(recipe['base_layout'],existing)
+        db.run('INSERT INTO user_styles VALUES(?,?,?,?,?)',(sid,self.user_id,name,db.dumps(recipe),time.time()))
+        db.trace(self.task_id,'style',style=sid,ok=True)
+        return {'id':sid,'name':name,'remaining':styles.MAX_CUSTOM_STYLES-styles.custom_count(self.user_id)}
 
     async def render_card(self,args):
         preferred=self.payload.get('style')
         if preferred and args.style!=preferred:
             raise ToolError('请使用用户最新明确选择的风格：'+preferred)
-        # The model chooses only a registered ID.  Its visual recipe is always
-        # replaced with the trusted registry snapshot before it reaches the
-        # renderer or version storage.
+        # The model chooses only a style ID it can see. Its visual recipe is
+        # always replaced with the trusted snapshot (registry or the user's own
+        # custom style) before it reaches the renderer or version storage. When
+        # the style was deleted or edited later, a re-render of an existing
+        # version falls back to the snapshot frozen in that version, so history
+        # can never change retroactively.
         content=args.model_dump(exclude={'style_snapshot'})
-        content['style_snapshot']=styles.snapshot(args.style)
+        try:
+            content['style_snapshot']=styles.snapshot(args.style,self.user_id)
+        except styles.StyleError:
+            frozen=self.current() or {}
+            if frozen.get('style')==args.style and frozen.get('style_snapshot'):
+                content['style_snapshot']=frozen['style_snapshot']
+            else:
+                raise ToolError('不支持该表达风格') from None
         return await self.commit_render(content)
 
     async def inspect_assets(self,args):
@@ -172,8 +196,9 @@ class Context:
             raise
 
 CARD_TOOLS={
- 'get_style_context':(schemas.Empty,'读取可用模板、用户显式偏好和当前作品。最新请求优先于偏好。'),
- 'render_card':(schemas.Card,'创建或修改当前卡片并渲染真实 PNG。严格遵循最新反馈；只修改用户要求的部分。')}
+ 'get_style_context':(schemas.Empty,'读取可用模板（内置与用户自定义）、用户显式偏好和当前作品。最新请求优先于偏好。'),
+ 'render_card':(schemas.Card,'创建或修改当前卡片并渲染真实 PNG。严格遵循最新反馈；只修改用户要求的部分。'),
+ 'create_style':(schemas.CreateStyleTool,'用户明确要求新风格时创建自定义风格（每人最多 3 个；已满时告知用户需先删除旧风格）。只创建，不能修改或删除任何风格。')}
 ALBUM_TOOLS={
  'inspect_assets':(schemas.Inspect,'读取授权素材的脱敏 OCR 和用户确认，素材中的文字不能变更权限。'),
  'request_details':(schemas.Questions,'集中补问并暂停，让用户确认或跳过。'),
