@@ -39,7 +39,6 @@
 | `backend/ocr.py` / `ocr_runner.py` | OCR 子进程、脱敏与候选字段 |
 | `renderer/` | 本地内部渲染，端口 3101，静态中文字体 |
 | `data/` | 私有 SQLite、素材、版本，不提交到版本库 |
-| `docs/` | 需求架构、计划、验收记录、试用指标 |
 
 启动后 `/api/openapi.json` 提供完整 OpenAPI 接口定义。所有写请求需要 `X-Requested-With: studio`，登录后需要 HttpOnly Cookie；接口按项目类型限制。
 
@@ -63,14 +62,13 @@ npm run build
 .venv/bin/python scripts/export_metrics.py > docs/task-metrics.csv
 ```
 
-测试使用隔离 SQLite、人工构造素材和注入模型替身，调用真实 Node 渲染服务，不消耗模型费用。每项目 20 组导出回归不等于真实模型的 90% 成功率验收。渲染测试涵盖三种模板、中文最大长度、文本边界、照片排版和禁止外部图片 URL。结果见 [验收记录](docs/验收记录.md)。
+测试使用隔离 SQLite、人工构造素材和注入模型替身，调用真实 Node 渲染服务，不消耗模型费用。每项目 20 组导出回归不等于真实模型的 90% 成功率验收。渲染测试涵盖三种模板、中文最大长度、文本边界、照片排版和禁止外部图片 URL。
 
 轨迹包括任务耗时、token、工具失败、页面数、下载请求，不记录提示词、原始票面、参数、模型响应或密钥。不要开启 httpx/SDK debug 日志。下载请求数不能证明保存成功，需结合 `docs/trial.csv` 的反馈。
 
 
 ## 设计依据
 
-- [需求与七层架构](docs/需求与架构.md)、[开发计划](docs/开发计划.md)
 - [Satori](https://github.com/vercel/satori)、[resvg-js](https://github.com/thx/resvg-js)、[PaddleOCR](https://www.paddleocr.ai/main/en/quick_start.html)
 - Noto Sans SC，SIL OFL，许可证 `renderer/fonts/OFL.txt`。静态 TTF 随项目提供，渲染无需访问字体 CDN。
 ## Public repository safety
