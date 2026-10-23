@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/前端-React%2019%20%2B%20Vite-149eca" alt="React 19 + Vite">
   <img src="https://img.shields.io/badge/后端-FastAPI-05998b" alt="FastAPI">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-0f766e" alt="许可证：MIT"></a>
 </p>
 
 **输入三个状态 · 选一款风格 · AI 写文案排版，本地渲染出 1080×1440 专属人格卡**
